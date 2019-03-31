@@ -7,12 +7,23 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.TransferHandler;
 import javax.swing.border.EmptyBorder;
+
+import Controller.Collision;
+import Controller.GestorPlayer;
+import Controller.GestorVirus;
+import Controller.Infecting;
+import Model.Cell;
+import Model.Player;
+
 import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.rmi.server.SocketSecurityException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Vector;
 import java.awt.FlowLayout;
 import java.awt.List;
@@ -23,12 +34,15 @@ import javax.swing.JButton;
 public class ServerModel extends JFrame {
 
 	
-	public static final int PORT_RECEIVE = 9000;	
+	public static final int PORT_RECEIVE = 9000;
+	public static final int PORT_SEND = 9001;
 	/**
 	 * El servidor dispone de un socket para atender a cada cliente por individual
 	 */
-	private Socket conectionSocket;
+	private ServerSocket conectionSocket;
 	
+	public static final int WINDOW_WIDTH = 1000;
+	public static final int WINDOW_HEIGHT = 700;
 	private User user;
 	
 	private static Vector users=new Vector<>();; 
@@ -39,8 +53,7 @@ public class ServerModel extends JFrame {
 	
 	private JPanel contentPane;
 
-	private ThreadGame threadGame;
-	
+
 	private ThreadUsers threadUsers;
 	
 	private ThreadTimeToStart timeToStart;
@@ -50,6 +63,16 @@ public class ServerModel extends JFrame {
 	private String timeLoad;
 	
 	private ArrayList<String> posPlayers;
+	
+	private HashMap<String, String> nickIP;
+	
+	private ArrayList<Player> jugadores;
+	
+	private GestorPlayer gp;
+	
+	private GestorVirus gc;
+	private Collision collision;
+	private Infecting infecting;
 	
 	public ArrayList<String> getPosPlayers() {
 		return posPlayers;
@@ -63,7 +86,7 @@ public class ServerModel extends JFrame {
 	 * 
 	 * Create the frame.
 	 */
-	public ServerModel(Socket sock) {
+	public ServerModel(ServerSocket mysocket) {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
 		contentPane = new JPanel();
@@ -77,33 +100,14 @@ public class ServerModel extends JFrame {
 		setGameStart(false);
 		setTimeLimit(false);
 		setStartTime(false);
-		
-		conectionSocket=sock;
+		setNickIP(new HashMap<>());
+
+		jugadores = new ArrayList<>();
+		conectionSocket=mysocket;
 		user.addUser("a", "123");
 		user.addUser("b", "234");
-	}
-
-	public void startgame() {
-		setGameStart(true);
-		threadUsers.stop();
-		System.out.println("game");
-		threadGame=new ThreadGame(this);
-		threadGame.start();
-		String p1= "10:10:20";
-		String p2= "200:200:20";
-		posPlayers.add(p1);
-		posPlayers.add(p2);
-		for (int i = 0; i < getUsers().size(); i++) {
-			try {
-				BufferedWriter bw = (BufferedWriter) getUsers().get(i);
-				String enemys=String.join(",", posEnemy(posPlayers, i));
-				bw.write("StartGame;"+posPlayers.get(i)+";"+enemys);
-				bw.write("\r\n");
-				bw.flush();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
+		gc=new GestorVirus();
+		gp=new GestorPlayer(gc);
 	}
 	public ArrayList<String> posEnemy(ArrayList<String> pos, int t){
 		ArrayList<String> post= new ArrayList<>(); 
@@ -145,7 +149,17 @@ public class ServerModel extends JFrame {
 		String nickTemp=data.split(";")[0];
 		String passTemp=data.split(";")[1];
 		return user.addUser(nickTemp, passTemp);
+		
 	}
+	public void StartGame() {
+		System.out.println("colisiones ");
+		 	 
+			collision = new Collision(gp,gc);
+	        infecting = new Infecting(this);
+	        collision.start();
+	        infecting.start();
+	}
+
 	public  Vector getUsers() {
 		return users;
 	}
@@ -158,13 +172,17 @@ public class ServerModel extends JFrame {
 		this.users = users;
 	}
 
+	public void gestorActualizado(GestorVirus Gc) {
+		System.out.println(gc.getVirus().size()+" ngc "+Gc.getVirus().size());
+		gc.setVirus(Gc.getVirus());
+	}
 
-	public Socket getConectionSocket() {
+	public ServerSocket getConectionSocket() {
 		return conectionSocket;
 	}
 
 
-	public void setConectionSocket(Socket conectionSocket) {
+	public void setConectionSocket(ServerSocket conectionSocket) {
 		this.conectionSocket = conectionSocket;
 	}
 
@@ -211,5 +229,55 @@ public class ServerModel extends JFrame {
 
 	public void setTimeLoad(String timeLoad) {
 		this.timeLoad = timeLoad;
+	}
+
+	public HashMap<String, String> getNickIP() {
+		return nickIP;
+	}
+
+	public void setNickIP(HashMap<String, String> nickIP) {
+		this.nickIP = nickIP;
+	}
+
+	public GestorPlayer getGp() {
+		return gp;
+	}
+
+	public void setGp(GestorPlayer gp) {
+		this.gp = gp;
+	}
+
+	public GestorVirus getGc() {
+		return gc;
+	}
+
+	public void setGc(GestorVirus gc) {
+		this.gc = gc;
+	}
+
+	public int addPlayer(String data,String ip) {
+		String nickTemp=data.split(";")[0];
+		nickIP.put(nickTemp, ip);
+		return gp.addNewPlayer(nickTemp, WINDOW_HEIGHT, WINDOW_WIDTH);
+		
+	}
+
+	public void sendFood() {
+		
+		for (String ip : getNickIP().values()) {
+			
+			try {
+				Socket envioActualizacionMovimiento = new Socket(ip, PORT_SEND);
+				ObjectOutputStream paqueteReenvio = new ObjectOutputStream(
+						envioActualizacionMovimiento.getOutputStream());
+				paqueteReenvio.writeObject("newgc");
+				paqueteReenvio.writeObject(getGc());
+				envioActualizacionMovimiento.close();
+			} catch (Exception e) {
+				// TODO: handle exception
+			}
+				
+			
+		}
 	}
 }

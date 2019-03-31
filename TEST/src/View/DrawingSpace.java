@@ -15,10 +15,7 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- *
- * @author Godievski
- */
+
 public class DrawingSpace extends Canvas{
     private Image dibujoAux;
     private Graphics gAux;
@@ -104,7 +101,23 @@ public class DrawingSpace extends Canvas{
     public void setID(int value){
         this.id = value;
     }
-    private void paintOwnScore(Graphics g) throws RemoteException{
+    public GestorPlayer getPlayers() {
+		return players;
+	}
+
+	public void setPlayers(GestorPlayer players) {
+		this.players = players;
+	}
+
+	public GestorVirus getVirus() {
+		return virus;
+	}
+
+	public void setVirus(GestorVirus virus) {
+		this.virus = virus;
+	}
+
+	private void paintOwnScore(Graphics g) throws RemoteException{
         g.setColor(Color.DARK_GRAY);
         g.setFont(new Font("Ubuntu",Font.BOLD,14));
         int score = this.players.getPlayerID(this.id).getMass();

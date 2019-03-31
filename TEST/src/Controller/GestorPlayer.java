@@ -2,6 +2,7 @@ package Controller;
 
 import Model.Player;
 import java.awt.Graphics;
+import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
@@ -9,20 +10,20 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Random;
 
-public class GestorPlayer extends UnicastRemoteObject{
+public class GestorPlayer implements Serializable{
     //ONLY TO CHECK COLLISIONS
     private GestorVirus gv;
     private int counter;
     private ArrayList<Player> players;
     private static final Random ran = new Random();
     
-    public GestorPlayer(GestorVirus gv) throws RemoteException{
+    public GestorPlayer(GestorVirus gv){
         this.gv = gv;
         this.players = new ArrayList<>();
         this.counter = 0;
     }
     
-    public Player getPlayerID(int id) throws RemoteException{
+    public Player getPlayerID(int id){
         for(Player p: players){
             if (p.getID() == id)
                 return p;
@@ -30,7 +31,7 @@ public class GestorPlayer extends UnicastRemoteObject{
         return null;
     }
 
-    public int addNewPlayer(String nickname,int xMax, int yMax) throws RemoteException{
+    public int addNewPlayer(String nickname,int xMax, int yMax){
         this.players.add(new Player(this.counter,nickname, xMax, yMax));
         this.counter += 1;
         return this.counter - 1;
@@ -57,14 +58,14 @@ public class GestorPlayer extends UnicastRemoteObject{
         }
     }
     
-    public void render(Graphics g, double scale) throws RemoteException{
+    public void render(Graphics g, double scale){
         for(int i = 0; i < players.size(); i++){
             Player p = players.get(i);
             p.render(g, scale);
         }
     }
     
-    public boolean mover(int id,double x, double y) throws RemoteException{
+    public boolean mover(int id,double x, double y){
         Player p = this.getPlayerID(id);
         if(p!=null){
             p.mover(x, y);
@@ -74,21 +75,23 @@ public class GestorPlayer extends UnicastRemoteObject{
         }
     }
     
-    public void checkCollisionVirus(int id) throws RemoteException{ 
+    public boolean checkCollisionVirus(int id) { 
         Player p = this.getPlayerID(id);
+        boolean r=false;
         if(p!=null){
-            gv.checkCollisions(p);
+            r=gv.checkCollisions(p);
         }
+        return r;
     }
 
-    public void split(int id) throws RemoteException{
+    public void split(int id){
         Player p = this.getPlayerID(id);
         if(p != null){
             p.split();
         }
     }
     
-    public ArrayList getTop(int n) throws RemoteException{
+    public ArrayList getTop(int n) {
         ArrayList<Player> playersTop = new ArrayList<Player>(players);
         Collections.sort(playersTop, new Comparator<Player>() {
             @Override
@@ -105,21 +108,37 @@ public class GestorPlayer extends UnicastRemoteObject{
         }
     }
     
-    public Player getPlayerIterator(int index) throws RemoteException{
+    public Player getPlayerIterator(int index) {
         return this.players.get(index);
     }
     
-    public void incrementTimeDuration(int id,int time) throws RemoteException{
+    public void incrementTimeDuration(int id,int time){
         Player p = this.getPlayerID(id);
         if(p != null){
             p.incrementTimeCreation(time);
         }
     }
     
-    public void fusion(int id)throws RemoteException{
+    public ArrayList<Player> getPlayers() {
+		return players;
+	}
+
+	public void setPlayers(ArrayList<Player> players) {
+		this.players = players;
+	}
+
+	public void fusion(int id){
         Player p = this.getPlayerID(id);
         if(p != null){
             p.fusion();
         }
     }
+
+	public GestorVirus getGv() {
+		return gv;
+	}
+
+	public void setGv(GestorVirus gv) {
+		this.gv = gv;
+	}
 }

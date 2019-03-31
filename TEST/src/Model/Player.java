@@ -17,7 +17,7 @@ public class Player implements Serializable {
     private ArrayList<Cell> cells;
     private double vel;
     private double vectorX, vectorY;
-    
+    private boolean activo;
     private boolean mustDie;
     private Font font;
     
@@ -29,6 +29,7 @@ public class Player implements Serializable {
         cell.setPrincipal(true);
         this.cells = new ArrayList<>();
         this.cells.add(cell);
+        setActivo(true);
         this.vectorX = this.vectorY = this.vel = 0;
         this.mustDie = false;
         this.font = new Font("Ubuntu",Font.PLAIN,cell.getRadio()/2);
@@ -48,6 +49,7 @@ public class Player implements Serializable {
     
     public void updateExistence(){
         this.mustDie = this.cells.isEmpty();
+        this.activo=false;
     }
     
     public double getCenterX(){
@@ -122,8 +124,11 @@ public class Player implements Serializable {
         this.calcularVelocidad();
         this.calcularVector(x, y);
         for(Cell cell: cells){
+        	
             cell.move(this.vectorX, this.vectorY);
+            
         }
+        
     }
     
     public void calcularVelocidad(){
@@ -221,4 +226,12 @@ public class Player implements Serializable {
         cell.setPrincipal(true);
         this.cells.add(cell);
     }
+
+	public boolean isActivo() {
+		return activo;
+	}
+
+	public void setActivo(boolean activo) {
+		this.activo = activo;
+	}
 }

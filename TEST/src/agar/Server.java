@@ -13,11 +13,11 @@ public class Server {
     public static void main(String[] args) throws IOException {
     	ServerSocket mysocket = new ServerSocket(ServerModel.PORT_RECEIVE);
 
-		while (true) {
-			Socket sock = mysocket.accept();
-			ServerModel server = new ServerModel(sock);
+		//while (true) {
+			
+			ServerModel server = new ServerModel(mysocket);
 			server.StartThread(server);
-		}
+		//}
 		
 		/*
 		EventQueue.invokeLater(new Runnable() {

@@ -29,11 +29,17 @@ public class Moving extends Thread{
             try {
                 this.updatePositionMouse();
                 gp.mover(id, xFinal, yFinal);
-                gp.checkCollisionVirus(id);
+                boolean sendgv=false;
+                
+                if(wg.isGaming()) {
+                	
+                	 sendgv=gp.checkCollisionVirus(id);
+                }
+                wg.sendPlayer(id,sendgv);
                 Thread.sleep(INTERVALO);
                 gp.incrementTimeDuration(id, INTERVALO);
                 gp.fusion(id);
-            } catch (RemoteException | InterruptedException ex) {
+            } catch (InterruptedException ex) {
                 Logger.getLogger(Moving.class.getName()).log(Level.SEVERE, null, ex);
             }
         }

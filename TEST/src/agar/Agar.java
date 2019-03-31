@@ -12,7 +12,7 @@ public class Agar {
         try {
             //WindowGame w = new WindowGame(args[0], args[1]);
             Client c = new Client("localhost", "1099");
-            c.play();
+           // c.play();
         } catch (Exception e) {
             e.printStackTrace();
         }

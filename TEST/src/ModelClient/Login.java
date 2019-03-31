@@ -1,6 +1,8 @@
 package ModelClient;
 
 import Controller.GestorPlayer;
+import View.Client;
+
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -21,17 +23,18 @@ public class Login extends JDialog{
     private final JButton jbtOk = new JButton("Play");
     private final JButton jbtCancel = new JButton("Cancel");
     
-
+    private Client client;
     private boolean state;
     
     public Login(GestorPlayer gp) {
         //this(null, true);
-        this.state = false;
+        this.setState(false);
     }
 
-    public Login(final JFrame parent, boolean modal) {
-        super(parent, modal);
-        this.state = false;
+    public Login(final JFrame parent, boolean modal, Client cli) {
+
+    	client=cli;
+        this.setState(false);
         this.setTitle("Agar by Godievski");
         
         JPanel p3 = new JPanel(new GridLayout(2, 1));
@@ -69,9 +72,14 @@ public class Login extends JDialog{
         jbtOk.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                parent.setVisible(true);
-                setVisible(false);
-                state = true;
+            	if(!client.isClientConected()) {
+            		parent.setVisible(true);
+                    setVisible(false);
+                    setState(true);
+            	}else {
+            		client.userPass(getNickname(), "123", "login");
+            	}
+                
             }
         });
         jbtCancel.addActionListener(new ActionListener() {
@@ -89,6 +97,14 @@ public class Login extends JDialog{
         return this.jtfUsername.getText();
     }
     public boolean getState(){
-        return this.state;
+        return this.isState();
     }
+
+	public boolean isState() {
+		return state;
+	}
+
+	public void setState(boolean state) {
+		this.state = state;
+	}
 }

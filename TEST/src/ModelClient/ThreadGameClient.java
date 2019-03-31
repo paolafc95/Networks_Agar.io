@@ -12,13 +12,12 @@ public class ThreadGameClient extends Thread{
 	}
 
 	public void run() {
-		while(client.isGaming()) {
+		while(true) {
 			String resp;
 			try {
-				resp = client.getReader().readLine().trim();
-				String stad= resp.split(";")[0];
-				client.updateList(stad);
-			} catch (IOException e) {
+				client.getDs().repaint();
+				Thread.sleep(10);
+			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}

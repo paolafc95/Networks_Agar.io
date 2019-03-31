@@ -48,7 +48,7 @@ public class ThreadTimeToStart extends Thread{
 							nuSeg = 59;
 						} else {
 							server.setTimeLimit(true);
-							server.startgame();
+							
 							break;
 						}
 					}

@@ -15,11 +15,6 @@ import javax.swing.JLabel;
 public class Login extends JDialog {
 	private JTextField txtNick;
 	private JTextField txtPass;
-
-	private final JLabel jlblUsername = new JLabel("Nickname");
-    private final JTextField jtfUsername = new JTextField(15);
-    private final JButton jbtOk = new JButton("Play");
-    private final JButton jbtCancel = new JButton("Cancel");
 	private final JLabel lblNickname;
 	private final JLabel lblPassword;
     
@@ -27,7 +22,12 @@ public class Login extends JDialog {
 		getContentPane().setLayout(null);
 		
 		JButton btnLogin = new JButton("Login");
-		btnLogin.setBounds(172, 155, 89, 23);
+		btnLogin.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				//client userPass(String nick, String pass)
+			}
+		});
+		btnLogin.setBounds(172, 170, 89, 23);
 		getContentPane().add(btnLogin);
 		
 		JButton btnSingIn = new JButton("Sign in");

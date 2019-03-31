@@ -5,7 +5,7 @@ import Controller.GestorPlayer;
 import Controller.GestorVirus;
 import Controller.Infecting;
 import Controller.Moving;
-import ModelClient.ThreadCharge;
+import Model.Player;
 import ModelClient.ThreadGameClient;
 import ModelClient.ThreadListenerServer;
 import ModelClient.Login;
@@ -18,6 +18,8 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.net.MalformedURLException;
 import java.net.Socket;
@@ -42,7 +44,16 @@ public class Client extends JFrame{
     private int id;
     private Login loginWindow;
     private DrawingSpace ds;
-    private Moving movPlayer;
+    public DrawingSpace getDs() {
+		return ds;
+	}
+
+
+	public void setDs(DrawingSpace ds) {
+		this.ds = ds;
+	}
+
+	private Moving movPlayer;
     
     //Variables conection
     private PanelNewUser newUser;
@@ -51,13 +62,11 @@ public class Client extends JFrame{
 	
 	private String pass;
 	
-	private BufferedWriter writer;
+	private ObjectOutputStream writer;
 	
-    private BufferedReader reader;
+    private ObjectInputStream reader;
     
     private ThreadListenerServer listenerServer;
-    
-    private ThreadCharge threadCharge;
     
     private boolean chargering;
     
@@ -71,58 +80,32 @@ public class Client extends JFrame{
 	 */
 	public static final int PORT_SEND = 9000;
 
+	public static final int PORT_RECIVE = 9001;
+	
 	private boolean isClientConected;
     //
     public Client(String ip, String port) throws NotBoundException, MalformedURLException, RemoteException{
         initComponents(ip, port);
-        this.loginWindow = new Login(this, false);
+        this.loginWindow = new Login(this, false,this);
         this.loginWindow.setVisible(true);
     }
     
     
     public void play(){
-        //ESPERA A QUE INGRESE SU NICKNAME
-        while(!this.loginWindow.getState()){
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ex) {
-            	ex.getStackTrace();
-            }
-        }
-        
-        this.createBufferStrategy(2);
-        this.setLocationRelativeTo(null);
-        this.setIgnoreRepaint(false);
-        
-        //ADD PLAYER
-        this.nick = this.loginWindow.getNickname();
-        try {
-            this.id = this.players.addNewPlayer(nick, this.getWidth(), this.getHeight());
-            
-            this.ds.setID(this.id);
-        } catch (RemoteException ex) {
-            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
-        //LOCAL
-        this.movPlayer = new Moving(id,players,this);
-        this.movPlayer.start();
-        
-        /*
-        //SERVER
-        this.collision = new Collision(players,virus);
-        this.collision.start();
-        this.infecting = new Infecting(virus);
-        this.infecting.start();
-        */
-        
-        //PLAY
         while(true){
-            this.ds.repaint();
-            try {
-                Thread.sleep(10);
+        	System.out.println(isChargering());
+        	while(isChargering()) {
+        		this.ds.repaint();
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException ex) {
+                   
+                }
+        	}
+        	try {
+                Thread.sleep(100000);
             } catch (InterruptedException ex) {
-                Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+               
             }
         }
     }
@@ -134,29 +117,21 @@ public class Client extends JFrame{
         this.setResizable(false);
         this.setFocusable(true);
         this.setLocationRelativeTo(null);
-        
+        System.out.println("inicio a conectar");
+        Connect();
         //SERVER
         //this.virus = new GestorVirus();
         //this.players = new GestorPlayer(this.virus);
-        this.virus = new GestorVirus();
-        this.players = new GestorPlayer(virus);
         
-        ///
-        Collision collision = new Collision(players,virus);
-        Infecting infecting = new Infecting(virus);
-        //collision.start();
-        infecting.start();
-        this.ds = new DrawingSpace(this.players,this.virus, new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
-        this.ds.setFocusable(false);
-        this.ds.setIgnoreRepaint(false);
-        this.add((Component)this.ds);
         
+        /*
         this.addKeyListener(new KeyAdapter(){
             @Override
             public void keyPressed(KeyEvent e) {
                 formKeyPressed(e);
             }
         });
+        */
     }
     
     @Override
@@ -167,16 +142,15 @@ public class Client extends JFrame{
     }
     
     int contador = 0;
+	private Socket socketClientr;
     
     public void formKeyPressed(KeyEvent e){
         //SPLIT
         int code = e.getKeyCode();
         if (code == KeyEvent.VK_SPACE){
-            try {
+            
                 this.players.split(id);
-            } catch (RemoteException ex) {
-                Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
-            }
+          
         }
     }
     //funtions Conection
@@ -188,13 +162,15 @@ public class Client extends JFrame{
 			isClientConected = true;
 			try {
 				
-				Socket socketClient = new Socket("sd", PORT_SEND);
-				writer = new BufferedWriter(new OutputStreamWriter(socketClient.getOutputStream()));
-				reader =new BufferedReader(new InputStreamReader(socketClient.getInputStream()));
+			
+				//reader =new ObjectInputStream(socketClientr.getInputStream());
 				
 				listenerServer=new ThreadListenerServer(this);
+				
 				listenerServer.start();
-				threadCharge=new ThreadCharge(this);
+				
+				this.virus = new GestorVirus();
+		        this.players = new GestorPlayer(virus);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -209,18 +185,28 @@ public class Client extends JFrame{
 	public void userPass(String nam,String pas,String tipe) {
 		name=nam;
 		pass=pas;
-		
+		String loginUser=name+";"+pass;
+		try {
+			Socket envioActualizacionMovimiento = new Socket(LOCAL_HOST,
+					PORT_SEND);
+			ObjectOutputStream paqueteReenvio = new ObjectOutputStream(
+					envioActualizacionMovimiento.getOutputStream());
+			paqueteReenvio.writeObject(loginUser);
+			envioActualizacionMovimiento.close();
+			
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		
 		try {
-			writer.write(name+";"+pass+";"+tipe);
-			writer.write("\r\n");
-			writer.flush();
 			
-		} catch (IOException e) {
+			
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+		System.out.println("user pass ready");
 	}
 	
 	public void pNewUser() {
@@ -239,9 +225,31 @@ public class Client extends JFrame{
 		JOptionPane.showMessageDialog(this,"Contraseña o usuario incorrecto",
 				"Advertencia",JOptionPane.WARNING_MESSAGE);
 	}
-	public void pCharge(String tipe) {
+	public void pCharge(String tipe, int id) {
 		
 		if(tipe.equals("login")) {
+			this.ds = new DrawingSpace(this.players,this.virus, new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
+            this.ds.setFocusable(false);
+            this.ds.setIgnoreRepaint(false);
+            this.add((Component)this.ds);
+			setVisible(true);
+			loginWindow.setVisible(false);
+			loginWindow.setState(true);
+			this.createBufferStrategy(2);
+			this.setLocationRelativeTo(null);
+			this.setIgnoreRepaint(false);
+			this.nick = this.name;
+			
+	           // this.id = this.players.addNewPlayer(nick, this.getWidth(), this.getHeight());
+	            this.id=id;
+	            this.ds.setID(this.id);
+	           
+	        //LOCAL
+	        System.out.println("hilo mover");
+	        this.movPlayer = new Moving(id,players,this);
+	        this.movPlayer.start();
+	        System.out.println("hilo mover2");
+	        
 			//contentPane.remove(login);
 			//contentPane.add(panelCarga);
 			
@@ -251,22 +259,21 @@ public class Client extends JFrame{
 			
 			
 		}
-		
-		//contentPane.revalidate();
-		
-		setChargering(true);
-		
-		threadCharge.start();
-		
 		try {
-			writer.write("load");
-			writer.write("\r\n");
-			writer.flush();
-		} catch (IOException e) {
+			Socket envioActualizacionMovimiento = new Socket(LOCAL_HOST,
+					PORT_SEND);
+			ObjectOutputStream paqueteReenvio = new ObjectOutputStream(
+					envioActualizacionMovimiento.getOutputStream());
+			paqueteReenvio.writeObject("gameStart");
+			envioActualizacionMovimiento.close();
+		} catch (IOException e1) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			e1.printStackTrace();
 		}
-		
+		gameClient= new ThreadGameClient(this);
+		gameClient.start();
+		setChargering(true);
+		setGaming(true);
 	}
 	public void pGame(String data) {
 		//contentPane.remove(panelCarga);
@@ -286,12 +293,56 @@ public class Client extends JFrame{
 		gameClient= new ThreadGameClient(this);
 		
 	}
-	public void updatePlayers(String dataPlayers) {
+	public void updatePlayers(GestorPlayer nGp) {
 		/*
 		panelGame.updateList(dataPlayers);
 		contentPane.repaint();
 		contentPane.revalidate();
 		*/
+		players=nGp;
+	}
+	public void updateComida(GestorVirus nGp) {
+		/*
+		panelGame.updateList(dataPlayers);
+		contentPane.repaint();
+		contentPane.revalidate();
+		*/
+		System.out.println("food1");
+		virus=nGp;
+		System.out.println("food2");
+		
+		System.out.println("food1");
+	}
+	public void updateDataGame(GestorVirus nGp) {
+		System.out.println("cfood");
+		virus=nGp;
+		ds.setVirus(virus);
+		players.setGv(virus);
+	}
+	public void sendPlayer(int id, boolean SendGv) {
+		try {
+			Player p=players.getPlayerID(id);
+			Socket envioActualizacionMovimiento = new Socket(LOCAL_HOST,
+					PORT_SEND);
+			ObjectOutputStream paqueteReenvio = new ObjectOutputStream(
+					envioActualizacionMovimiento.getOutputStream());
+			paqueteReenvio.writeObject("game");
+			paqueteReenvio.writeObject(p);
+			
+			
+			if(SendGv) {
+				
+				paqueteReenvio.writeObject("gc");
+				paqueteReenvio.writeObject(players.getGv());
+			}else {
+				paqueteReenvio.writeObject("no gc");
+			}
+			envioActualizacionMovimiento.close();
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 	public void updateList(String data) {
@@ -322,32 +373,46 @@ public class Client extends JFrame{
 		pass=n;
 	}
 
-	public BufferedWriter getWriter() {
+	public ObjectOutputStream getWriter() {
 		return writer;
 	}
 
-	public void setWriter(BufferedWriter writer) {
+	public void setWriter(ObjectOutputStream writer) {
 		this.writer = writer;
 	}
 
-	public BufferedReader getReader() {
+	public ObjectInputStream getReader() {
 		return reader;
 	}
 
-	public void setReader(BufferedReader reader) {
+	public void setReader(ObjectInputStream reader) {
 		this.reader = reader;
 	}
 
+	
 	public boolean isChargering() {
 		return chargering;
 	}
+	
 	public void setChargering(boolean chargering) {
 		this.chargering = chargering;
 	}
+	
 	public boolean isGaming() {
 		return gaming;
 	}
+	
 	public void setGaming(boolean gaming) {
 		this.gaming = gaming;
+	}
+
+
+	public Socket getSocketClientr() {
+		return socketClientr;
+	}
+
+
+	public void setSocketClientr(Socket socketClientr) {
+		this.socketClientr = socketClientr;
 	}
 }
