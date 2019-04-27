@@ -227,7 +227,7 @@ public class ServerThreadUser extends Thread{
 				        	 linea = br.readLine();
 				         }
 				         if(!seEncontroUsuario) {
-				        	 //JOptionPane.showMessageDialog(null, "Usuario o contraseña invalida");
+				        	// JOptionPane.showMessageDialog(null, "Usuario o contraseña inválida");
 				         }
 				         
 				         
