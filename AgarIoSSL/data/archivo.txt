@@ -1,9 +1,0 @@
-dragon;123;dragon@gmail.com
-alpha;234;apha@hotmail.com
-a;a;a
-b;b;b
-r;r;r
-q;q;q
-we;we;we
-pepe;pepe;pepe
-la;la;la
